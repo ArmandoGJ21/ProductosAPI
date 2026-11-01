@@ -1,3 +1,14 @@
+// =====================================================================
+//  ProductosEndpoints.cs
+//  Define las rutas HTTP (/productos) que se prueban en Swagger.
+//  Cada endpoint:
+//    1. recibe la petición (y el JSON si lo hay),
+//    2. valida los datos,
+//    3. llama al repositorio,
+//    4. responde con el código HTTP correcto.
+//  Los endpoints NO escriben SQL: eso solo lo hace el repositorio.
+// =====================================================================
+
 using ProductosAPI.Models;
 using ProductosAPI.Repositories;
 
@@ -5,23 +16,35 @@ namespace ProductosAPI.Endpoints;
 
 public static class ProductosEndpoints
 {
-    // Registra todos los endpoints de /productos
+    // Se llama desde Program.cs para registrar todas las rutas
     public static void Map(WebApplication app)
     {
+        // MapGroup: todas las rutas de abajo empiezan con /productos.
+        // WithTags agrupa los endpoints bajo "Productos" en Swagger.
         var group = app.MapGroup("/productos").WithTags("Productos");
 
-        group.MapGet("/", ObtenerTodos);
-        group.MapGet("/{id}", ObtenerPorId);
-        group.MapPost("/", Crear);
-        group.MapPut("/{id}", Actualizar);
-        group.MapDelete("/{id}", Eliminar);
+        group.MapGet("/", ObtenerTodos);        // GET    /productos
+        group.MapGet("/{id}", ObtenerPorId);    // GET    /productos/5
+        group.MapPost("/", Crear);              // POST   /productos
+        group.MapPut("/{id}", Actualizar);      // PUT    /productos/5
+        group.MapDelete("/{id}", Eliminar);     // DELETE /productos/5
     }
 
-    // GET /productos
+    // ---------------------------------------------------------------
+    // Nota sobre los parámetros de cada método:
+    //  - int id                  -> sale de la URL ({id})
+    //  - Producto producto       -> sale del JSON del body
+    //  - IProductoRepository repo -> lo entrega .NET (inyección de
+    //                               dependencias registrada en Program.cs)
+    // ---------------------------------------------------------------
+
+    // GET /productos -> Consultas
+    // Responde 200 OK con la lista de productos
     static IResult ObtenerTodos(IProductoRepository repo)
         => Results.Ok(repo.ObtenerTodos());
 
-    // GET /productos/1
+    // GET /productos/{id} -> Buscar
+    // 200 OK con el producto, o 404 Not Found si no existe
     static IResult ObtenerPorId(int id, IProductoRepository repo)
     {
         var producto = repo.ObtenerPorId(id);
@@ -30,31 +53,40 @@ public static class ProductosEndpoints
             : Results.Ok(producto);
     }
 
-    // POST /productos
+    // POST /productos -> Insert
+    // 201 Created con el producto (ya con su Id), o 400 si los datos son inválidos
     static IResult Crear(Producto producto, IProductoRepository repo)
     {
+        // 1) Validar antes de tocar la base de datos
         var error = Validar(producto);
         if (error != null)
             return Results.BadRequest(new { error });
 
+        // 2) Guardar y asignar el Id que generó SQL Server
         producto.Id = repo.Insertar(producto);
+
+        // 3) 201 + la URL donde se puede consultar el producto nuevo
         return Results.Created($"/productos/{producto.Id}", producto);
     }
 
-    // PUT /productos/1
+    // PUT /productos/{id} -> Actualizar
+    // 204 No Content si se actualizó, 404 si no existe, 400 si datos inválidos
     static IResult Actualizar(int id, Producto producto, IProductoRepository repo)
     {
         var error = Validar(producto);
         if (error != null)
             return Results.BadRequest(new { error });
 
+        // El Id se toma de la URL, no del JSON
         producto.Id = id;
+
         return repo.Actualizar(producto)
             ? Results.NoContent()
             : Results.NotFound(new { mensaje = "Producto no encontrado" });
     }
 
-    // DELETE /productos/1
+    // DELETE /productos/{id} -> Eliminar
+    // 204 No Content si se borró, 404 si no existe
     static IResult Eliminar(int id, IProductoRepository repo)
     {
         return repo.Eliminar(id)
@@ -62,7 +94,8 @@ public static class ProductosEndpoints
             : Results.NotFound(new { mensaje = "Producto no encontrado" });
     }
 
-    // Validaciones básicas antes de guardar
+    // Validaciones básicas. Regresa el mensaje de error, o null si todo
+    // está bien. Nunca se debe confiar en que el cliente manda datos correctos.
     static string? Validar(Producto producto)
     {
         if (string.IsNullOrWhiteSpace(producto.Nombre))
