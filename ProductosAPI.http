@@ -1,0 +1,42 @@
+@host = http://localhost:5210
+
+### Obtener todos los productos
+GET {{host}}/productos
+Accept: application/json
+
+###
+
+### Buscar producto con ID 1
+GET {{host}}/productos/1
+Accept: application/json
+
+###
+
+### Insertar un producto
+POST {{host}}/productos
+Content-Type: application/json
+
+{
+  "nombre": "Audífonos",
+  "descripcion": "Audífonos Bluetooth",
+  "precio": 599.99,
+  "stock": 15
+}
+
+###
+
+### Actualizar producto con ID 1
+PUT {{host}}/productos/1
+Content-Type: application/json
+
+{
+  "nombre": "Teclado RGB",
+  "descripcion": "Teclado mecánico con luces",
+  "precio": 999.00,
+  "stock": 8
+}
+
+###
+
+### Eliminar producto con ID 2
+DELETE {{host}}/productos/2
