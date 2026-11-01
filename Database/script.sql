@@ -2,6 +2,7 @@ IF DB_ID('ProductosDB') IS NULL
     CREATE DATABASE ProductosDB;
 GO
 
+
 USE ProductosDB;
 GO
 
