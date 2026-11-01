@@ -54,7 +54,6 @@ public static class ProductosEndpoints
     }
 
     // POST /productos -> Insert
-    // 201 Created con el producto (ya con su Id), o 400 si los datos son inválidos
     static IResult Crear(Producto producto, IProductoRepository repo)
     {
         // 1) Validar antes de tocar la base de datos
@@ -70,7 +69,6 @@ public static class ProductosEndpoints
     }
 
     // PUT /productos/{id} -> Actualizar
-    // 204 No Content si se actualizó, 404 si no existe, 400 si datos inválidos
     static IResult Actualizar(int id, Producto producto, IProductoRepository repo)
     {
         var error = Validar(producto);
@@ -86,7 +84,6 @@ public static class ProductosEndpoints
     }
 
     // DELETE /productos/{id} -> Eliminar
-    // 204 No Content si se borró, 404 si no existe
     static IResult Eliminar(int id, IProductoRepository repo)
     {
         return repo.Eliminar(id)
@@ -94,8 +91,7 @@ public static class ProductosEndpoints
             : Results.NotFound(new { mensaje = "Producto no encontrado" });
     }
 
-    // Validaciones básicas. Regresa el mensaje de error, o null si todo
-    // está bien. Nunca se debe confiar en que el cliente manda datos correctos.
+    // Validaciones básicas. Regresa el mensaje de error, o null si todo está bien. Nunca se debe confiar en que el cliente manda datos correctos.
     static string? Validar(Producto producto)
     {
         if (string.IsNullOrWhiteSpace(producto.Nombre))

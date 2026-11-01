@@ -1,14 +1,3 @@
-// =====================================================================
-//  ProductoRepository.cs
-//  Implementa IProductoRepository. Es la ÚNICA clase que habla con la
-//  base de datos. Usa ADO.NET:
-//    - SqlConnection -> la conexión a SQL Server
-//    - SqlCommand    -> la instrucción SQL que se va a ejecutar
-//    - SqlDataReader -> recorre las filas que regresa un SELECT
-//
-//  Todas las consultas usan parámetros (@Id, @Nombre, ...) en lugar de
-//  pegar los valores en el texto SQL. Así se evita la inyección SQL.
-// =====================================================================
 
 using Microsoft.Data.SqlClient;
 using ProductosAPI.Data;
@@ -37,7 +26,6 @@ public class ProductoRepository : IProductoRepository
         var productos = new List<Producto>();
 
         // 1) Crear la conexión y abrirla.
-        //    "using" la cierra automáticamente al salir del método.
         using var conn = _conexion.ObtenerConexion();
         conn.Open();
 
@@ -58,10 +46,6 @@ public class ProductoRepository : IProductoRepository
         return productos;
     }
 
-    // -----------------------------------------------------------------
-    // PUNTO A RESOLVER: Buscar
-    // SELECT de un solo producto por su Id
-    // -----------------------------------------------------------------
     public Producto? ObtenerPorId(int id)
     {
         using var conn = _conexion.ObtenerConexion();
@@ -79,17 +63,12 @@ public class ProductoRepository : IProductoRepository
         return reader.Read() ? Mapear(reader) : null;
     }
 
-    // -----------------------------------------------------------------
-    // PUNTO A RESOLVER: Insert
-    // Agrega un producto y devuelve el Id que generó SQL Server
-    // -----------------------------------------------------------------
+
     public int Insertar(Producto producto)
     {
         using var conn = _conexion.ObtenerConexion();
         conn.Open();
 
-        // OUTPUT INSERTED.Id hace que SQL Server regrese el Id nuevo
-        // (el que generó IDENTITY) en la misma instrucción.
         using var cmd = new SqlCommand(
             @"INSERT INTO Productos (Nombre, Descripcion, Precio, Stock)
               OUTPUT INSERTED.Id
@@ -102,14 +81,9 @@ public class ProductoRepository : IProductoRepository
         cmd.Parameters.AddWithValue("@Stock", producto.Stock);
 
         // ExecuteScalar se usa cuando el SQL regresa UN solo valor
-        // (aquí, el Id nuevo).
         return (int)cmd.ExecuteScalar();
     }
 
-    // -----------------------------------------------------------------
-    // PUNTO A RESOLVER: Actualizar
-    // Modifica todos los campos del producto con ese Id
-    // -----------------------------------------------------------------
     public bool Actualizar(Producto producto)
     {
         using var conn = _conexion.ObtenerConexion();
@@ -130,10 +104,7 @@ public class ProductoRepository : IProductoRepository
         return cmd.ExecuteNonQuery() > 0;
     }
 
-    // -----------------------------------------------------------------
-    // PUNTO A RESOLVER: Eliminar
-    // Borra el producto con ese Id
-    // -----------------------------------------------------------------
+
     public bool Eliminar(int id)
     {
         using var conn = _conexion.ObtenerConexion();
@@ -146,11 +117,6 @@ public class ProductoRepository : IProductoRepository
         return cmd.ExecuteNonQuery() > 0;
     }
 
-    // -----------------------------------------------------------------
-    // Método auxiliar: convierte la fila actual del reader en Producto.
-    // Los números (0, 1, 2...) son la posición de cada columna en el
-    // SELECT: Id=0, Nombre=1, Descripcion=2, Precio=3, Stock=4.
-    // -----------------------------------------------------------------
     private static Producto Mapear(SqlDataReader reader) => new Producto
     {
         Id          = reader.GetInt32(0),

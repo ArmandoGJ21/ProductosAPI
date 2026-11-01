@@ -1,84 +1,47 @@
-# =====================================================================
-#  docker-compose.yml
-#  Levanta SQL Server dentro de un contenedor de Docker para que la API
-#  tenga una base de datos sin instalar SQL Server en la computadora.
-#
-#  Comandos principales (ejecutarlos en la carpeta del proyecto):
-#    docker compose up -d     -> crea y arranca la base de datos
-#    docker compose ps        -> muestra si los contenedores están corriendo
-#    docker compose down      -> detiene la base (los datos se conservan)
-#    docker compose down -v   -> detiene la base y BORRA los datos
-# =====================================================================
+
 
 services:
 
-  # ---------------------------------------------------------------
-  # 1) Servidor de base de datos SQL Server
-  # ---------------------------------------------------------------
   sqlserver:
-    # Imagen oficial de Microsoft con SQL Server 2022 para Linux
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: productos-sqlserver
 
     environment:
-      # Es obligatorio aceptar la licencia para que SQL Server arranque
       ACCEPT_EULA: "Y"
-      # Contraseña del usuario administrador "sa".
-      # SOLO para desarrollo local. Debe tener mayúsculas, minúsculas,
-      # números y símbolos o SQL Server no arranca.
       MSSQL_SA_PASSWORD: "Productos#2026"
-      # Edición gratuita para desarrollo
       MSSQL_PID: "Developer"
 
     ports:
-      # puerto_de_mi_computadora:puerto_del_contenedor
-      # La API se conecta a localhost,1433 y Docker lo manda al contenedor
       - "1433:1433"
 
     volumes:
-      # Guarda los archivos de la base en un volumen para que los datos
-      # no se pierdan al apagar o reiniciar el contenedor
       - sqlserver-data:/var/opt/mssql
 
     healthcheck:
-      # Docker ejecuta este comando cada 10 s para saber si SQL Server
-      # ya está listo para recibir conexiones (SELECT 1 responde = listo)
       test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q \"SELECT 1\" || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 15s
 
-  # ---------------------------------------------------------------
-  # 2) Inicializador: ejecuta Database/script.sql una sola vez
-  #    (crea la base ProductosDB, la tabla Productos y datos de ejemplo)
-  # ---------------------------------------------------------------
   db-init:
-    # Se usa la misma imagen porque ya trae la herramienta sqlcmd
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: productos-db-init
 
     depends_on:
       sqlserver:
-        # Espera a que el healthcheck diga que SQL Server está listo
         condition: service_healthy
 
     volumes:
-      # Comparte la carpeta Database del proyecto con el contenedor
-      # (solo lectura) para poder ejecutar el script
       - ./Database:/scripts:ro
 
-    # Se conecta al contenedor "sqlserver" (dentro de Docker se usa el
-    # nombre del servicio como si fuera el nombre del servidor),
-    # ejecuta el script y termina.
     command: >
       /opt/mssql-tools18/bin/sqlcmd
       -S sqlserver -U sa -P "Productos#2026" -C
       -i /scripts/script.sql
 
-    # No se vuelve a ejecutar cuando termina
     restart: "no"
 
-# Volumen con nombre donde viven los datos de SQL Server
+
 volumes:
   sqlserver-data:

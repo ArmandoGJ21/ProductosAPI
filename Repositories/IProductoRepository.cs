@@ -1,12 +1,4 @@
-// =====================================================================
-//  IProductoRepository.cs
-//  Interface que pide la actividad. Es un "contrato": dice QUÉ
-//  operaciones existen, pero no CÓMO se hacen. ProductoRepository es
-//  la clase que la implementa con SQL Server.
-//
-//  Ventaja: los endpoints solo conocen esta interface, así que si
-//  mañana se cambia a MySQL, solo se cambia la clase que la implementa.
-// =====================================================================
+
 
 using ProductosAPI.Models;
 
